@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email System</title>
+</head>
+<body>
+    <h1>Email System</h1>
+    
+    <h2>Enviar Correo</h2>
+    <form id="sendForm">
+        <label for="sender">Remitente:</label>
+        <input type="text" id="sender" name="sender" required><br>
+        
+        <label for="recipient">Destinatario:</label>
+        <input type="text" id="recipient" name="recipient" required><br>
+        
+        <label for="subject">Asunto:</label>
+        <input type="text" id="subject" name="subject" required><br>
+        
+        <label for="body">Cuerpo:</label><br>
+        <textarea id="body" name="body" rows="4" cols="50" required></textarea><br>
+        
+        <input type="submit" value="Enviar Correo">
+    </form>
+
+    <h2>Bandeja de Entrada</h2>
+    <ul id="inbox"></ul>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.3/socket.io.js"></script>
+    <script>
+        $(document).ready(function () {
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+            // Función para enviar correos electrónicos
+            $("#sendForm").submit(function (event) {
+                event.preventDefault();
+                
+                var sender = $("#sender").val();
+                var recipient = $("#recipient").val();
+                var subject = $("#subject").val();
+                var body = $("#body").val();
+
+                var data = {
+                    sender: sender,
+                    recipient: recipient,
+                    subject: subject,
+                    body: body
+                };
+
+                socket.emit('send_email', data);
+                $("#sendForm")[0].reset();
+            });
+
+            // Actualizar la bandeja de entrada al conectar
+            socket.on('connect', function () {
+                socket.emit('inbox_update', {username: 'destinatario'});
+            });
+
+            // Actualizar la interfaz al recibir un nuevo correo
+            socket.on('receive_email', function (data) {
+                var inboxItem = "<li><strong>De:</strong> " + data.email.sender +
+                                "<br><strong>Asunto:</strong> " + data.email.subject +
+                                "<br><strong>Cuerpo:</strong> " + data.email.body + "</li>";
+                $("#inbox").append(inboxItem);
+            });
+
+            // Actualizar la bandeja de entrada
+            socket.on('inbox_update', function (data) {
+                var inboxHtml = "<ul>";
+                for (var i = 0; i < data.inbox.length; i++) {
+                    var email = data.inbox[i];
+                    inboxHtml += "<li><strong>De:</strong> " + email.sender +
+                                "<br><strong>Asunto:</strong> " + email.subject +
+                                "<br><strong>Cuerpo:</strong> " + email.body + "</li>";
+                }
+                inboxHtml += "</ul>";
+                $("#inbox").html(inboxHtml);
+            });
+
+            $(document).ready(function () {
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // ...
+
+        // Solicitar la bandeja de entrada al conectar
+        socket.on('connect', function () {
+            socket.emit('inbox_request', 'destinatario');
+        });
+
+        // ...
+
+        socket.on('inbox_update', function (data) {
+            var inboxHtml = "<ul>";
+            for (var i = 0; i < data.inbox.length; i++) {
+                var email = data.inbox[i];
+                inboxHtml += "<li><strong>De:</strong> " + email.sender +
+                            "<br><strong>Asunto:</strong> " + email.subject +
+                            "<br><strong>Cuerpo:</strong> " + email.body + "</li>";
+            }
+            inboxHtml += "</ul>";
+            $("#inbox").html(inboxHtml);
+        });
+    });
+        });
+
+        
+    </script>
+</body>
+</html>
